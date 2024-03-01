@@ -1,6 +1,6 @@
 use plotters::prelude::*;
-use core::panic;
-use std::env;
+use core::{f64, panic};
+use std::{env, f32::consts::PI};
 use meval::{Context, eval_str, eval_str_with_context};
 
 struct Vector {
@@ -11,12 +11,12 @@ struct Vector {
 }
 
 impl Vector {
-    fn new() -> Self {
+    fn new(x_val: f64, y_val: f64, r_val: f64, theta_val: f64) -> Self {
         Vector{
-            x: 0.0,
-            y: 0.0,
-            r: 0.0,
-            theta: 0.0,
+            x: x_val,
+            y: y_val,
+            r: r_val,
+            theta: theta_val,
         }
     }
 }
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{func}");
     }
     // Define the path to save the drawing
-    let path = "cartesian_plane.png";
+    let path = "plot.png";
     let root = BitMapBackend::new(path, (1080, 1080)).into_drawing_area();
 
     // Fill the background
@@ -43,43 +43,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a Cartesian 2D chart
     let mut chart = ChartBuilder::on(&root)
-        .caption("Cartesian Plane", ("sans-serif", 50).into_font())
+        .caption(format!("F = ({}, {})", func_vec[0], func_vec[1]), ("sans-serif", 50).into_font())
         .margin(5)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d(-15f64..15f64, -15f64..15f64)?;
+        .build_cartesian_2d(-3f64..3f64, -3f64..3f64)?;
 
     // Configure the mesh
     chart.configure_mesh().draw()?;
-let line_style = ShapeStyle {
+    let line_style = ShapeStyle {
         color: RGBAColor(0xff, 0x00, 0x00, 0.5),
         filled: true,
         stroke_width: 1, // Set the thickness here
     };
     // You can draw more things here (e.g., lines, points)
-    for i in -20..=20{
-        if i == 0 {continue}
-        for j in -20..=20 {
-            if j == 0 {continue}
-            let start = ((i as f64) / 2.0, (j as f64) / 2.0);
-            let mut end = (0.0, 0.0);
-            let mut ctx = Context::new();
-            ctx.var("x", i as f64)
-                .var("y", j as f64);
-            for (idx, func) in func_vec.iter().enumerate(){
-                let result = eval_str_with_context(func, &ctx).unwrap();
-                match idx {
-                    0 => end.0 = 3.0 * (0.5 * (result + 1.0).log10()),
-                    1 => end.1 = 3.0 * (0.5 * (result + 1.0).log10()),
-                    _ => {}
-                }
+    let scale = 5.0;
+    for i in -10..=10{
+        for j in -10..=10 {
+            let start = ((i as f64) / scale, (j as f64) / scale);
+            if i == 0 && j == 0 {
+                chart.draw_series(std::iter::once(Circle::new(
+                    start, // Coordinates for the point
+                    2,     // Radius of the circle, effectively the size of the point
+                    RED.filled(),
+                )))?;
+                continue
             }
-            end.0 += start.0;
-            end.1 += start.1;
-            let indices = get_vector(start, end);
-            chart.draw_series(LineSeries::new(vec![indices[0], indices[1]], line_style))?;
-            chart.draw_series(LineSeries::new(vec![indices[1], indices[2]], line_style))?;
-            chart.draw_series(LineSeries::new(vec![indices[1], indices[3]], line_style))?;
+            let mut ctx = Context::new();
+            ctx.var("x", i as f64 / scale)
+                .var("y", j as f64 / scale);
+            let mut values: Vec<f64> = vec![];
+            for func in func_vec.iter(){
+                values.push(eval_str_with_context(func, &ctx).unwrap());
+            }
+            if values[0] + values[1] > 100.0 {
+                chart.draw_series(std::iter::once(Circle::new(
+                    start, // Coordinates for the point
+                    2,     // Radius of the circle, effectively the size of the point
+                    RED.filled(),
+                )))?;
+            }
+            else {
+                let mut r_val = (values[0].powi(2) + values[1].powi(2)).sqrt();
+                // scale magnitude
+                r_val = 3.0 * (0.5 * (r_val + 1.0).log10());
+                let theta_val = values[1].atan2(values[0]);
+                let vector = Vector::new(start.0, start.1, r_val, theta_val);
+
+                let end = (vector.x + (vector.r * vector.theta.cos()), vector.y + (vector.r * vector.theta.sin()));
+
+                let indices = get_vector(start, end);
+                chart.draw_series(std::iter::once(Circle::new(
+                    start, // Coordinates for the point
+                    2,     // Radius of the circle, effectively the size of the point
+                    RED.filled(),
+                )))?;
+                chart.draw_series(LineSeries::new(vec![indices[0], indices[1]], line_style))?;
+                chart.draw_series(LineSeries::new(vec![indices[1], indices[2]], line_style))?;
+                chart.draw_series(LineSeries::new(vec![indices[1], indices[3]], line_style))?;
+            }
             // println!("{},{} -> {},{}", start.0, start.0, end.0, end.1)
         }
     }
