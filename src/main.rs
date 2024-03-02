@@ -29,9 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<Vec<String>>();
 
 
-    for func in func_vec.clone() {
-        println!("{func}");
-    }
+    println!("Visualizing ({}, {})...", func_vec.clone()[0], func_vec.clone()[1]);
     // Define the path to save the drawing
     let path = "plot.png";
     let root = BitMapBackend::new(path, (1080, 1080)).into_drawing_area();
@@ -54,7 +52,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         filled: true,
         stroke_width: 1, // Set the thickness here
     };
-    // You can draw more things here (e.g., lines, points)
+
+    // calculate and draw vectors
     let scale = 5.0;
     let range = 10;
     for i in -range..=range{
@@ -75,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for func in func_vec.iter(){
                 values.push(eval_str_with_context(func, &ctx).unwrap());
             }
-            println!("{}, {}", values[0], values[1]);
+            // println!("{}, {}", values[0], values[1]);
             if !(values[0].to_string() == "NaN" || values[1].to_string() == "NaN" || values[0].to_string() == "inf" || values[1].to_string() == "inf"){
                 let mut r_val = (values[0].powi(2) + values[1].powi(2)).sqrt();
                 // scale magnitude
@@ -93,19 +92,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chart.draw_series(LineSeries::new(vec![indices[1], indices[2]], line_style))?;
                 chart.draw_series(LineSeries::new(vec![indices[1], indices[3]], line_style))?;
             }
-            // println!("{},{} -> {},{}", start.0, start.0, end.0, end.1)
         }
     }
 
     // Save the drawing
     root.present()?;
+    println!("Visualization saved to: {path}");
 
     Ok(())
 }
 
 fn get_vector_line (vector: Vector) -> Vec<(f64, f64)>{
     // Calculate the points for the arrowhead
-    let arrowhead_length = 0.25 * vector.r; 
+    let arrowhead_length = (vector.r + 1.0).log(100.0); 
     let arrowhead_angle = 5.0 * std::f64::consts::PI / 6.0; 
 
  let arrow_point1 = polar_to_cartesian(
