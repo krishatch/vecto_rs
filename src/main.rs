@@ -1,20 +1,18 @@
 use plotters::prelude::*;
 use core::{f64, panic};
-use std::{env, f32::consts::PI};
-use meval::{Context, eval_str, eval_str_with_context};
+use std::env;
+use meval::{Context, eval_str_with_context};
 
 struct Vector {
-    x: f64,
-    y: f64,
+    tail: (f64, f64),
     r: f64,
     theta: f64,
 }
 
 impl Vector {
-    fn new(x_val: f64, y_val: f64, r_val: f64, theta_val: f64) -> Self {
+    fn new(tail_val: (f64, f64), r_val: f64, theta_val: f64) -> Self {
         Vector{
-            x: x_val,
-            y: y_val,
+            tail: tail_val,
             r: r_val,
             theta: theta_val,
         }
@@ -58,8 +56,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // You can draw more things here (e.g., lines, points)
     let scale = 5.0;
-    for i in -10..=10{
-        for j in -10..=10 {
+    let range = 10;
+    for i in -range..=range{
+        for j in -range..=range {
             let start = ((i as f64) / scale, (j as f64) / scale);
             if i == 0 && j == 0 {
                 chart.draw_series(std::iter::once(Circle::new(
@@ -76,23 +75,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for func in func_vec.iter(){
                 values.push(eval_str_with_context(func, &ctx).unwrap());
             }
-            if values[0] + values[1] > 100.0 {
-                chart.draw_series(std::iter::once(Circle::new(
-                    start, // Coordinates for the point
-                    2,     // Radius of the circle, effectively the size of the point
-                    RED.filled(),
-                )))?;
-            }
-            else {
+            println!("{}, {}", values[0], values[1]);
+            if !(values[0].to_string() == "NaN" || values[1].to_string() == "NaN" || values[0].to_string() == "inf" || values[1].to_string() == "inf"){
                 let mut r_val = (values[0].powi(2) + values[1].powi(2)).sqrt();
                 // scale magnitude
                 r_val = 3.0 * (0.5 * (r_val + 1.0).log10());
                 let theta_val = values[1].atan2(values[0]);
-                let vector = Vector::new(start.0, start.1, r_val, theta_val);
+                let vector = Vector::new(start, r_val, theta_val);
+                let indices = get_vector_line(vector);
 
-                let end = (vector.x + (vector.r * vector.theta.cos()), vector.y + (vector.r * vector.theta.sin()));
-
-                let indices = get_vector(start, end);
                 chart.draw_series(std::iter::once(Circle::new(
                     start, // Coordinates for the point
                     2,     // Radius of the circle, effectively the size of the point
@@ -112,24 +103,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn get_vector (start: (f64, f64), end: (f64, f64)) -> Vec<(f64, f64)>{
-    let scaled_length = (0.4 * (end.0 - start.0), 0.4 * (end.1 - start.1));
-    let length = (scaled_length.0.powi(2) + scaled_length.1.powi(2)).sqrt();
-    let unit_direction = (scaled_length.0 / length, scaled_length.1 / length);
-
+fn get_vector_line (vector: Vector) -> Vec<(f64, f64)>{
     // Calculate the points for the arrowhead
-    let arrowhead_length = 0.25f64; // Length of the arrowhead lines
-    let arrowhead_angle = std::f64::consts::PI / 6.0; // 30 degrees in radians
+    let arrowhead_length = 0.25 * vector.r; 
+    let arrowhead_angle = 5.0 * std::f64::consts::PI / 6.0; 
 
-    // Calculate two points of the arrowhead
-    let arrow_point1 = (
-        end.0 - arrowhead_length * (unit_direction.0 * arrowhead_angle.cos() - unit_direction.1 * arrowhead_angle.sin()),
-        end.1 - arrowhead_length * (unit_direction.1 * arrowhead_angle.cos() + unit_direction.0 * arrowhead_angle.sin()),
+ let arrow_point1 = polar_to_cartesian(
+        arrowhead_length,
+        vector.theta - arrowhead_angle,
+        vector.tail.0 + vector.r * vector.theta.cos(),
+        vector.tail.1 + vector.r * vector.theta.sin(),
     );
-    let arrow_point2 = (
-        end.0 - arrowhead_length * (unit_direction.0 * arrowhead_angle.cos() + unit_direction.1 * arrowhead_angle.sin()),
-        end.1 - arrowhead_length * (unit_direction.1 * arrowhead_angle.cos() - unit_direction.0 * arrowhead_angle.sin()),
+    let arrow_point2 = polar_to_cartesian(
+        arrowhead_length,
+        vector.theta + arrowhead_angle,
+        vector.tail.0 + vector.r * vector.theta.cos(),
+        vector.tail.1 + vector.r * vector.theta.sin(),
     );
 
-    vec![start, end, arrow_point1, arrow_point2]
+    // Collect points for plotting (assuming a function to plot or collect these points)
+    vec![vector.tail, (vector.tail.0 + vector.r * vector.theta.cos(), vector.tail.1 + vector.r * vector.theta.sin()) , arrow_point1, arrow_point2]
+}
+
+fn polar_to_cartesian(r: f64, theta: f64, offset_x: f64, offset_y: f64) -> (f64, f64) {
+    (
+        offset_x + r * theta.cos(),
+        offset_y + r * theta.sin(),
+    )
 }
