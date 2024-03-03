@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Configure the mesh
     chart.configure_mesh().draw()?;
     let line_style = ShapeStyle {
-        color: RGBAColor(0xff, 0x00, 0x00, 0.5),
+        color: RGBAColor(0xff, 0x00, 0xff, 0.5),
         filled: true,
         stroke_width: 1, // Set the thickness here
     };
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chart.draw_series(std::iter::once(Circle::new(
                     start, // Coordinates for the point
                     2,     // Radius of the circle, effectively the size of the point
-                    RED.filled(),
+                    GREEN.filled(),
                 )))?;
                 continue
             }
@@ -74,8 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for func in func_vec.iter(){
                 values.push(eval_str_with_context(func, &ctx).unwrap());
             }
-            // println!("{}, {}", values[0], values[1]);
-            if !(values[0].to_string() == "NaN" || values[1].to_string() == "NaN" || values[0].to_string() == "inf" || values[1].to_string() == "inf"){
+            println!("{}, {}", values[0], values[1]);
+            if !(values[0].to_string() == "NaN" || values[1].to_string() == "NaN" || values[0].to_string() == "inf" || values[1].to_string() == "inf" || values[0].to_string() == "-inf" || values[1].to_string() == "-inf"){
                 let mut r_val = (values[0].powi(2) + values[1].powi(2)).sqrt();
                 // scale magnitude
                 r_val = 3.0 * (0.5 * (r_val + 1.0).log10());
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chart.draw_series(std::iter::once(Circle::new(
                     start, // Coordinates for the point
                     2,     // Radius of the circle, effectively the size of the point
-                    RED.filled(),
+                    GREEN.filled(),
                 )))?;
                 chart.draw_series(LineSeries::new(vec![indices[0], indices[1]], line_style))?;
                 chart.draw_series(LineSeries::new(vec![indices[1], indices[2]], line_style))?;
