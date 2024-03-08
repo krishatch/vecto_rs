@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Configure the mesh
     chart.configure_mesh().draw()?;
     let line_style = ShapeStyle {
-        color: RGBAColor(0xff, 0x00, 0xff, 0.5),
+        color: RED.into(),
         filled: true,
         stroke_width: 1, // Set the thickness here
     };
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chart.draw_series(std::iter::once(Circle::new(
                     start, // Coordinates for the point
                     2,     // Radius of the circle, effectively the size of the point
-                    GREEN.filled(),
+                    RED.filled(),
                 )))?;
                 continue
             }
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chart.draw_series(std::iter::once(Circle::new(
                     start, // Coordinates for the point
                     2,     // Radius of the circle, effectively the size of the point
-                    GREEN.filled(),
+                    RED.filled(),
                 )))?;
                 chart.draw_series(LineSeries::new(vec![indices[0], indices[1]], line_style))?;
                 chart.draw_series(LineSeries::new(vec![indices[1], indices[2]], line_style))?;
